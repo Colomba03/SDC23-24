@@ -2,6 +2,7 @@
 #include <esp_now.h>
 #include <WiFi.h>
 #include <ESP32Servo.h>
+#include <L298N.h>
 
 #define CHANNEL 1
 
@@ -11,13 +12,15 @@ int xAngle = 0;
 #define SERVO_X_PIN  33 // ESP32 pin GPIO33 connected to Servo motor 1
 
 
+L298N motor1(13,27,26);
+L298N motor2(14,18,19);
 //PINES PARA DC MOTOR
-int motor1Pin1 = 0; 
-int motor1Pin2 = 0; 
-// int motor2Pin1 = 0; 
-// int motor2Pin2 = 0; 
-int enable1Pin = 0; 
-// int enable2Pin = 0;
+int motor1Pin1 = 27; 
+int motor1Pin2 = 26; 
+int motor2Pin1 = 18; 
+int motor2Pin2 = 19; 
+int enable1Pin = 13; 
+int enable2Pin = 14;
 const int freq = 30000;
 const int pwmChannel = 0;
 const int resolution = 8;
@@ -86,44 +89,40 @@ void setup() {
   // DC Motors
   pinMode(motor1Pin1, OUTPUT);
   pinMode(motor1Pin2, OUTPUT);
-  // pinMode(motor2Pin1, OUTPUT);
-  // pinMode(motor2Pin2, OUTPUT);
+  pinMode(motor2Pin1, OUTPUT);
+  pinMode(motor2Pin2, OUTPUT);
   pinMode(enable1Pin, OUTPUT);
-  // pinMode(enable2Pin, OUTPUT);
+  pinMode(enable2Pin, OUTPUT);
 
   // // configure LED PWM functionalitites
   ledcSetup(pwmChannel, freq, resolution);
   
   // // attach the channel to the GPIO to be controlled
   ledcAttachPin(enable1Pin, pwmChannel);
-  // ledcAttachPin(enable2Pin, pwmChannel);
+  ledcAttachPin(enable2Pin, pwmChannel);
 }
 
 //NAT: PARA MOVER EL DC MOTOR ADELANTE Y ATRAS. POR AHORA SOLO UN MOTOR.
 void dc_motors(int x){
+  motor1.setSpeed(100);
+  motor2.setSpeed(100);
   if(x < 125){
     Serial.println("Moving Forward");
-    digitalWrite(motor1Pin1, LOW);
-    digitalWrite(motor1Pin2, HIGH);
-    // digitalWrite(motor2Pin1, LOW);
-    // digitalWrite(motor2Pin2, HIGH);
+    motor1.forward();
+    motor2.forward();
   }
 
   //NAT: EL RANGO DE VALORES (QUE ME SALIO) CUANDO EL JOYSTICK ESTABA SIN MOVERSE
   if(x > 125 && x < 135){
     Serial.println("Motor stopped");
-    digitalWrite(motor1Pin1, LOW);
-    digitalWrite(motor1Pin2, LOW);
-    // digitalWrite(motor2Pin1, LOW);
-    // digitalWrite(motor2Pin2, LOW);
+    motor1.stop();
+    motor2.stop();
   }
 
   if(x > 135){
     Serial.println("Moving Backwards");
-    digitalWrite(motor1Pin1, HIGH);
-    digitalWrite(motor1Pin2, LOW);
-    // digitalWrite(motor2Pin1, HIGH);
-    // digitalWrite(motor2Pin2, LOW);
+    motor1.backward();
+    motor2.backward();
   }
 }
 
@@ -148,7 +147,7 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
   Serial.println(myData.y);
 
   //NAT: LLAMANDO LOS MOVIMIENTOS DEL SERVO Y DEL DC MOTOR
-  servo_movement(myData.x);
+  servo_movement(myData.y);
   dc_motors(myData.x);
 }
 
