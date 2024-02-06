@@ -9,11 +9,12 @@
 //PINES PARA EL SERVO
 Servo myservo;
 int xAngle = 0;
+int step = 1000;
 #define SERVO_X_PIN  33 // ESP32 pin GPIO33 connected to Servo motor 1
 
 
-L298N motor1(13,27,26);
-L298N motor2(14,18,19);
+L298N motor1(14,27,26);
+L298N motor2(13,19,18);
 //PINES PARA DC MOTOR
 int motor1Pin1 = 27; 
 int motor1Pin2 = 26; 
@@ -84,36 +85,37 @@ void setup() {
 
   //SERVO
   Serial.begin(115200);
-  myservo.attach(SERVO_X_PIN);  // attaches the servo on pin X to the servo object
+  myservo.setPeriodHertz(50);
+  myservo.attach(SERVO_X_PIN, 500, 2400);  // attaches the servo on pin X to the servo object
   
-  // DC Motors
-  pinMode(motor1Pin1, OUTPUT);
-  pinMode(motor1Pin2, OUTPUT);
-  pinMode(motor2Pin1, OUTPUT);
-  pinMode(motor2Pin2, OUTPUT);
-  pinMode(enable1Pin, OUTPUT);
-  pinMode(enable2Pin, OUTPUT);
+  // // DC Motors
+  // pinMode(motor1Pin1, OUTPUT);
+  // pinMode(motor1Pin2, OUTPUT);
+  // pinMode(motor2Pin1, OUTPUT);
+  // pinMode(motor2Pin2, OUTPUT);
+  // pinMode(enable1Pin, OUTPUT);
+  // pinMode(enable2Pin, OUTPUT);
 
   // // configure LED PWM functionalitites
-  ledcSetup(pwmChannel, freq, resolution);
+  // ledcSetup(pwmChannel, freq, resolution);
   
   // // attach the channel to the GPIO to be controlled
-  ledcAttachPin(enable1Pin, pwmChannel);
-  ledcAttachPin(enable2Pin, pwmChannel);
+  // ledcAttachPin(enable1Pin, pwmChannel);
+  // ledcAttachPin(enable2Pin, pwmChannel);
 }
 
 //NAT: PARA MOVER EL DC MOTOR ADELANTE Y ATRAS. POR AHORA SOLO UN MOTOR.
 void dc_motors(int x){
-  motor1.setSpeed(100);
-  motor2.setSpeed(100);
-  if(x < 125){
+  motor1.setSpeed(200);
+  motor2.setSpeed(200);
+  if(x < 100){
     Serial.println("Moving Forward");
     motor1.forward();
     motor2.forward();
   }
 
   //NAT: EL RANGO DE VALORES (QUE ME SALIO) CUANDO EL JOYSTICK ESTABA SIN MOVERSE
-  if(x > 125 && x < 135){
+  if(x > 100 && x < 135){
     Serial.println("Motor stopped");
     motor1.stop();
     motor2.stop();
@@ -131,7 +133,20 @@ void servo_movement(int x){
   xAngle = map(x, 0, 255, 0, 360);
   Serial.print("xAngle:");
   Serial.println(xAngle);
-  myservo.write(map(xAngle, 0, 255, 0, 360));
+  if(200 < xAngle && xAngle < 220){
+    myservo.write(90);  
+    // myservo.writeMicroseconds(1500);
+    Serial.println("Stop");
+    step = 0;
+  }else if(xAngle < 200) {
+    Serial.println("One direction");
+    myservo.write(xAngle);
+    // myservo.writeMicroseconds(2000);
+  } else if(xAngle > 220) {
+    // myservo.writeMicroseconds(1000);
+    Serial.println("the other direction");
+    myservo.write(xAngle);
+  }
 }
 
 // callback when data is recv from Master
