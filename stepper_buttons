@@ -1,0 +1,66 @@
+
+#define buttonPin     19
+#define buttonPin2    21
+const int DIR = 13;
+const int STEP = 14;
+const int  steps_per_rev = 255;
+// Setting PWM properties
+int enable1Pin = 14;
+const int freq = 30000;
+const int pwmChannel = 0;
+const int resolution = 8;
+int dutyCycle = 200;
+int buttonState;
+int buttonState2;
+
+int level = 0;
+void setup() {
+  // Init Serial Monitor
+  Serial.begin(9600);
+  pinMode(buttonPin, INPUT);
+  pinMode(buttonPin2, INPUT);
+  pinMode(STEP, OUTPUT);
+  pinMode(DIR, OUTPUT);
+  // configure LED PWM functionalitites
+  // ledcSetup(pwmChannel, freq, resolution);
+  
+  // // attach the channel to the GPIO to be controlled
+  // ledcAttachPin(STEP, pwmChannel);
+
+}
+
+void loop() {
+  // Set values to send
+  buttonState = digitalRead(buttonPin);
+  buttonState2 = digitalRead(buttonPin2);
+  digitalWrite(DIR, HIGH);
+  // Serial.println("Button State 1:");
+  // Serial.println(buttonState);
+  // Serial.println("Button State 2:");
+  // Serial.println(buttonState2);
+  if(buttonState == 1 ){ 
+    level = level + 1;
+    Serial.println("Level:");
+    Serial.println(level);
+    Serial.println("Spinning Clockwise...");
+    for(int i = 0; i<steps_per_rev; i++)
+    {
+      // analogWrite(STEP,steps_per_rev);
+      digitalWrite(STEP, HIGH);
+      delayMicroseconds(400);
+      digitalWrite(STEP, LOW);
+      delayMicroseconds(1000-100);
+    }
+    delay(1000);
+  }
+  if(buttonState2 == 1){
+    level = 0;
+    Serial.println("Shooooot");
+    digitalWrite(STEP, LOW); 
+  }
+  if(level == 5){ 
+    level = 0;
+    digitalWrite(STEP, LOW); 
+  }
+  delay(200);
+}
