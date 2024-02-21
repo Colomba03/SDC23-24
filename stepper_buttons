@@ -1,8 +1,11 @@
+#include <ezButton.h>
 
 #define buttonPin     19
 #define buttonPin2    21
+#define magnetPin     33
 const int DIR = 13;
 const int STEP = 14;
+ezButton mySwitch(17);
 const int  steps_per_rev = 255;
 // Setting PWM properties
 int enable1Pin = 14;
@@ -12,6 +15,7 @@ const int resolution = 8;
 int dutyCycle = 200;
 int buttonState;
 int buttonState2;
+bool shooting = false;
 
 int level = 0;
 void setup() {
@@ -21,6 +25,9 @@ void setup() {
   pinMode(buttonPin2, INPUT);
   pinMode(STEP, OUTPUT);
   pinMode(DIR, OUTPUT);
+  pinMode(magnetPin, OUTPUT);
+  mySwitch.setDebounceTime(50);
+  digitalWrite(magnetPin, HIGH);
   // configure LED PWM functionalitites
   // ledcSetup(pwmChannel, freq, resolution);
   
@@ -30,37 +37,62 @@ void setup() {
 }
 
 void loop() {
-  // Set values to send
+  mySwitch.loop();
   buttonState = digitalRead(buttonPin);
   buttonState2 = digitalRead(buttonPin2);
-  digitalWrite(DIR, HIGH);
-  // Serial.println("Button State 1:");
-  // Serial.println(buttonState);
-  // Serial.println("Button State 2:");
-  // Serial.println(buttonState2);
-  if(buttonState == 1 ){ 
+  if(buttonState == 1 && !shooting){ 
+    digitalWrite(DIR, HIGH);
     level = level + 1;
     Serial.println("Level:");
     Serial.println(level);
     Serial.println("Spinning Clockwise...");
     for(int i = 0; i<steps_per_rev; i++)
     {
-      // analogWrite(STEP,steps_per_rev);
       digitalWrite(STEP, HIGH);
-      delayMicroseconds(400);
+      delayMicroseconds(500);
       digitalWrite(STEP, LOW);
       delayMicroseconds(1000-100);
     }
     delay(1000);
   }
-  if(buttonState2 == 1){
+  if(buttonState2 == 1 && level != 0){
+    digitalWrite(DIR, LOW);
+    level = level - 1;
+    Serial.println("Level:");
+    Serial.println(level);
+    Serial.println("Spinning Counter-Clockwise...");
+    for(int i = 0; i<steps_per_rev; i++)
+    {
+      digitalWrite(STEP, HIGH);
+      delayMicroseconds(500);
+      digitalWrite(STEP, LOW);
+      delayMicroseconds(1000-100);
+    }
+    delay(1000); 
+  }
+  if(mySwitch.isPressed() && level != 0){
+    Serial.println("Shooooot!");
+    shooting = true; 
+    // Magnet apagado
+    digitalWrite(magnetPin, LOW);
     level = 0;
-    Serial.println("Shooooot");
     digitalWrite(STEP, LOW); 
   }
-  if(level == 5){ 
-    level = 0;
-    digitalWrite(STEP, LOW); 
+  else if(level == 5 || (mySwitch.isReleased())){
+    Serial.println("Reseting");
+    digitalWrite(DIR, LOW);
+    shooting = false;
+    // Prendido magnet
+    digitalWrite(magnetPin, HIGH);
+    if(level != 0){
+      for(int i = 0; i<steps_per_rev; i++)
+      {
+        digitalWrite(STEP, HIGH);
+        delayMicroseconds(800);
+        digitalWrite(STEP, LOW);
+        delayMicroseconds(1000-100);
+      }
+    }
+    delay(1000); 
   }
-  delay(200);
 }
