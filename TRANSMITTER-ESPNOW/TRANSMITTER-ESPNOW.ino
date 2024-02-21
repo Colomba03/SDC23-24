@@ -1,6 +1,8 @@
 #include <esp_now.h>
 #include <WiFi.h>
 #include <esp_wifi.h> // only for esp_wifi_set_channel()
+#include <ezButton.h>
+
 
 // Global copy of slave
 esp_now_peer_info_t slave;
@@ -12,6 +14,19 @@ esp_now_peer_info_t slave;
 #define VRX_PIN 32
 #define VRY_PIN 33
 
+//Button
+ezButton mySwitch(18);
+#define buttonPin     19
+#define buttonPin2    21
+uint8_t buttonState;
+uint8_t buttonState2;
+bool pressed = false;
+bool released = false;
+
+//Shooting
+uint8_t level = 0;
+bool shooting = false;
+
 
 // Structure example to send data
 // Must match the receiver structure
@@ -21,6 +36,12 @@ esp_now_peer_info_t slave;
 typedef struct struct_message {
   uint8_t x;
   uint8_t y;
+  uint8_t buttonState;
+  uint8_t buttonState2;
+  uint8_t level;
+  bool pressed;
+  bool released;
+  bool shooting;
 } struct_message;
 
 struct_message myData;
@@ -176,6 +197,22 @@ void sendData() {
   //myData.(el atributo que aparece en la estructura)
   myData.x = analogRead(VRX_PIN);
   myData.y = analogRead(VRY_PIN);
+  myData.buttonState = buttonState;
+  myData.buttonState2 = buttonState2;
+  myData.level = level;
+  myData.pressed = pressed;
+  myData.released = released;
+  Serial.println("Level");
+  Serial.println(level);
+  Serial.println("buttonState");
+  Serial.println(buttonState);
+  Serial.println("buttonState2");
+  Serial.println(buttonState2);
+  Serial.println("pressed");
+  Serial.println(pressed);
+  Serial.println("released");
+  Serial.println(released);
+
   const uint8_t *peer_addr = slave.peer_addr;
 
   Serial.print("Sending: "); 
@@ -224,12 +261,58 @@ void setup() {
   // Once ESPNow is successfully Init, we will register for Send CB to
   // get the status of Trasnmitted packet
   esp_now_register_send_cb(OnDataSent);
+
+  pinMode(buttonPin, INPUT);
+  pinMode(buttonPin2, INPUT);
+  mySwitch.setDebounceTime(50);
 }
 
 void loop() {
   //NAT: LO PUSE AQUI POR SI ACASO, NO SE SI HACE DIFERENCIA
+  Serial.println(level);
   myData.x = analogRead(VRX_PIN);
   myData.y = analogRead(VRY_PIN);
+  mySwitch.loop();
+  buttonState = digitalRead(buttonPin);
+  buttonState2 = digitalRead(buttonPin2);
+  myData.buttonState = buttonState;
+  myData.buttonState = buttonState2;
+
+  if(buttonState == 1 && !shooting && level<5){ 
+    level = level + 1;
+    myData.level = level;
+  } 
+  if(mySwitch.isPressed()){
+    pressed = true;
+    released = false;
+    myData.pressed = pressed;
+    myData.released = released;
+
+  }
+  if(mySwitch.isReleased()){
+    pressed = false;
+    released = true;
+    myData.released = true;
+    myData.pressed = false;
+  }
+  if(buttonState2 == 1 && level != 0){
+    level = level - 1;
+    myData.level = level;
+  }
+  if(mySwitch.isPressed() && level != 0){
+    shooting = true; 
+    myData.shooting = true;
+    level = 0;
+    myData.level = level;
+  }
+  else if(level == 5 || (mySwitch.isReleased())){
+    shooting = false;
+    myData.shooting = false;
+  }
+
+
+
+
   // In the loop we scan for slave
   ScanForSlave();
   // If Slave is found, it would be populate in slave variable
