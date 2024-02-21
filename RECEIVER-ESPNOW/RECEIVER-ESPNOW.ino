@@ -3,8 +3,25 @@
 #include <WiFi.h>
 #include <ESP32Servo.h>
 #include <L298N.h>
+#include <ezButton.h>
 
 #define CHANNEL 1
+
+// Shooting system
+
+#define buttonPin     19
+#define buttonPin2    21
+#define magnetPin     22 
+ezButton mySwitch(17);
+int buttonState;
+int buttonState2;
+bool shooting = false;
+
+
+//Stepper
+const int  steps_per_rev = 255;
+const int DIR = 13;
+const int STEP = 14;
 
 //PINES PARA EL SERVO
 Servo myservo;
@@ -35,6 +52,12 @@ const int resolution = 8;
 typedef struct struct_message {
   uint8_t x;
   uint8_t y;
+  uint8_t buttonState;
+  uint8_t buttonState2;
+  uint8_t level;
+  bool pressed;
+  bool released;
+  bool shooting;
 } struct_message;
 
 // Create a struct_message called myData
@@ -88,20 +111,13 @@ void setup() {
   myservo.setPeriodHertz(50);
   myservo.attach(SERVO_X_PIN, 500, 2400);  // attaches the servo on pin X to the servo object
   
-  // // DC Motors
-  // pinMode(motor1Pin1, OUTPUT);
-  // pinMode(motor1Pin2, OUTPUT);
-  // pinMode(motor2Pin1, OUTPUT);
-  // pinMode(motor2Pin2, OUTPUT);
-  // pinMode(enable1Pin, OUTPUT);
-  // pinMode(enable2Pin, OUTPUT);
-
-  // // configure LED PWM functionalitites
-  // ledcSetup(pwmChannel, freq, resolution);
+  //STEPPER
+  pinMode(STEP, OUTPUT);
+  pinMode(DIR, OUTPUT);
   
-  // // attach the channel to the GPIO to be controlled
-  // ledcAttachPin(enable1Pin, pwmChannel);
-  // ledcAttachPin(enable2Pin, pwmChannel);
+  //MAGNET
+  pinMode(magnetPin, OUTPUT);
+  digitalWrite(magnetPin, HIGH);
 }
 
 //NAT: PARA MOVER EL DC MOTOR ADELANTE Y ATRAS. POR AHORA SOLO UN MOTOR.
@@ -134,8 +150,8 @@ void servo_movement(int x){
   Serial.print("xAngle:");
   Serial.println(xAngle);
   if(200 < xAngle && xAngle < 220){
-    myservo.write(90);  
-    // myservo.writeMicroseconds(1500);
+    // myservo.write(0);  
+    myservo.writeMicroseconds(1500);
     Serial.println("Stop");
     step = 0;
   }else if(xAngle < 200) {
@@ -156,14 +172,71 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
   snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",
            mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
   memcpy(&myData, data, sizeof(myData));
-  Serial.print("X: ");
-  Serial.println(myData.x);
-  Serial.print("Y: ");
-  Serial.println(myData.y);
+  // Serial.print("X: ");
+  // Serial.println(myData.x);
+  // Serial.print("Y: ");
+  // Serial.println(myData.y);
+  // Serial.println("buttonState: ");
+  // Serial.println(myData.buttonState);
+  // Serial.println("buttonState2: ");
+  // Serial.println(myData.buttonState2);
+  Serial.println("level: ");
+  Serial.println(myData.level);
+
 
   //NAT: LLAMANDO LOS MOVIMIENTOS DEL SERVO Y DEL DC MOTOR
   servo_movement(myData.y);
   dc_motors(myData.x);
+
+  //Shooting
+  if(myData.buttonState == 1 && !shooting){ 
+    Serial.println("increasing");
+    digitalWrite(DIR, HIGH);
+    for(int i = 0; i<steps_per_rev; i++)
+    {
+      digitalWrite(STEP, HIGH);
+      delayMicroseconds(500);
+      digitalWrite(STEP, LOW);
+      delayMicroseconds(1000-100);
+    }
+    delay(1000);
+  }
+  if(myData.buttonState2 == 1 && myData.level != 0){
+    Serial.println("decreasing");
+    digitalWrite(DIR, LOW);
+    for(int i = 0; i<steps_per_rev; i++)
+    {
+      digitalWrite(STEP, HIGH);
+      delayMicroseconds(500);
+      digitalWrite(STEP, LOW);
+      delayMicroseconds(1000-100);
+    }
+    delay(1000); 
+  }
+  if(myData.shooting){
+    shooting = true; 
+    Serial.println("shoooooot");
+    // Magnet apagado
+    digitalWrite(magnetPin, LOW);
+    digitalWrite(STEP, LOW); 
+  }
+  else if(myData.level == 5 || (myData.released)){
+    Serial.println("Reseting");
+    digitalWrite(DIR, LOW);
+    shooting = false;
+    // Prendido magnet
+    digitalWrite(magnetPin, HIGH);
+    if(myData.level != 0){
+      for(int i = 0; i<steps_per_rev; i++)
+      {
+        digitalWrite(STEP, HIGH);
+        delayMicroseconds(800);
+        digitalWrite(STEP, LOW);
+        delayMicroseconds(1000-100);
+      }
+    }
+    delay(1000); 
+  }
 }
 
 //NAT: No se necesita usar el loop como OnDataRecv ya se repite
