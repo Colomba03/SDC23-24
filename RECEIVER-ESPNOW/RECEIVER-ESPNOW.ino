@@ -20,8 +20,8 @@ bool shooting = false;
 
 //Stepper
 const int  steps_per_rev = 255;
-const int DIR = 13;
-const int STEP = 14;
+const int DIR = 5;
+const int STEP = 21;
 
 //PINES PARA EL SERVO
 Servo myservo;
