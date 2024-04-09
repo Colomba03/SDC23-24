@@ -11,11 +11,12 @@
 
 #define buttonPin     19
 #define buttonPin2    21
-#define magnetPin     22 
+#define magnetPin     33 
 ezButton mySwitch(17);
 int buttonState;
 int buttonState2;
 bool shooting = false;
+bool released = true; 
 
 
 //Stepper
@@ -124,20 +125,20 @@ void setup() {
 void dc_motors(int x){
   motor1.setSpeed(200);
   motor2.setSpeed(200);
-  if(x < 100){
+  if(x < 95){
     Serial.println("Moving Forward");
     motor1.forward();
     motor2.forward();
   }
 
   //NAT: EL RANGO DE VALORES (QUE ME SALIO) CUANDO EL JOYSTICK ESTABA SIN MOVERSE
-  if(x > 100 && x < 135){
+  if(x > 95 && x < 115){
     Serial.println("Motor stopped");
     motor1.stop();
     motor2.stop();
   }
 
-  if(x > 135){
+  if(x > 115){
     Serial.println("Moving Backwards");
     motor1.backward();
     motor2.backward();
@@ -149,12 +150,12 @@ void servo_movement(int x){
   xAngle = map(x, 0, 255, 0, 360);
   Serial.print("xAngle:");
   Serial.println(xAngle);
-  if(200 < xAngle && xAngle < 220){
+  if(20 < xAngle && xAngle < 50){
     // myservo.write(0);  
     myservo.writeMicroseconds(1500);
     Serial.println("Stop");
     step = 0;
-  }else if(xAngle < 200) {
+  }else if(xAngle < 20) {
     Serial.println("One direction");
     myservo.write(xAngle);
     // myservo.writeMicroseconds(2000);
@@ -176,8 +177,9 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
   // Serial.println(myData.x);
   // Serial.print("Y: ");
   // Serial.println(myData.y);
-  // Serial.println("buttonState: ");
-  // Serial.println(myData.buttonState);
+  Serial.println("buttonState: ");
+  Serial.println(myData.buttonState);
+  int buttonState = myData.buttonState;
   // Serial.println("buttonState2: ");
   // Serial.println(myData.buttonState2);
   Serial.println("level: ");
@@ -189,6 +191,7 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
   dc_motors(myData.x);
 
   //Shooting
+  
   if(myData.buttonState == 1 && !shooting){ 
     Serial.println("increasing");
     digitalWrite(DIR, HIGH);
@@ -220,13 +223,14 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
     digitalWrite(magnetPin, LOW);
     digitalWrite(STEP, LOW); 
   }
-  else if(myData.level == 5 || (myData.released)){
+  else if(myData.level == 5 || (myData.released && shooting)){
     Serial.println("Reseting");
     digitalWrite(DIR, LOW);
     shooting = false;
     // Prendido magnet
     digitalWrite(magnetPin, HIGH);
-    if(myData.level != 0){
+    if(myData.level <= 5){
+      Serial.println("Actually Resetting");
       for(int i = 0; i<steps_per_rev; i++)
       {
         digitalWrite(STEP, HIGH);
