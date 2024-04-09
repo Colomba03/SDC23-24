@@ -273,6 +273,12 @@ void loop() {
   myData.x = analogRead(VRX_PIN);
   myData.y = analogRead(VRY_PIN);
   mySwitch.loop();
+  Serial.println("Joy stick values:");
+  Serial.println(myData.x);
+  Serial.println(myData.y);
+  int xAngle = map(myData.y, 0, 255, 0, 360);
+  Serial.print("xAngle:");
+  Serial.println(xAngle);
   buttonState = digitalRead(buttonPin);
   buttonState2 = digitalRead(buttonPin2);
   myData.buttonState = buttonState;
@@ -283,6 +289,7 @@ void loop() {
     myData.level = level;
   } 
   if(mySwitch.isPressed()){
+    Serial.println("Pressed");
     pressed = true;
     released = false;
     myData.pressed = pressed;
@@ -290,6 +297,7 @@ void loop() {
 
   }
   if(mySwitch.isReleased()){
+    Serial.println("Released");
     pressed = false;
     released = true;
     myData.released = true;
