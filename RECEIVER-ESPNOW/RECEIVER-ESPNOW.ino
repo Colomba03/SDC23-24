@@ -20,7 +20,7 @@ bool released = true;
 
 
 //Stepper
-const int  steps_per_rev = 255;
+const int  steps_per_rev = 255; 
 const int DIR = 5;
 const int STEP = 21;
 
@@ -28,7 +28,7 @@ const int STEP = 21;
 Servo myservo;
 int xAngle = 0;
 int step = 1000;
-#define SERVO_X_PIN  33 // ESP32 pin GPIO33 connected to Servo motor 1
+#define SERVO_X_PIN  32 // ESP32 pin GPIO33 connected to Servo motor 1
 
 
 L298N motor1(14,27,26);
@@ -125,20 +125,20 @@ void setup() {
 void dc_motors(int x){
   motor1.setSpeed(200);
   motor2.setSpeed(200);
-  if(x < 95){
+  if(x < 40){
     Serial.println("Moving Forward");
     motor1.forward();
     motor2.forward();
   }
 
   //NAT: EL RANGO DE VALORES (QUE ME SALIO) CUANDO EL JOYSTICK ESTABA SIN MOVERSE
-  if(x > 95 && x < 115){
+  if(x > 40 && x < 70){
     Serial.println("Motor stopped");
     motor1.stop();
     motor2.stop();
   }
 
-  if(x > 115){
+  if(x > 200){
     Serial.println("Moving Backwards");
     motor1.backward();
     motor2.backward();
