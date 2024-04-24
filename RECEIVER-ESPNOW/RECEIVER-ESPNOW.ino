@@ -17,6 +17,8 @@ int buttonState;
 int buttonState2;
 bool shooting = false;
 bool released = true; 
+int countR = 0;
+int countL = 0;
 
 
 //Stepper
@@ -125,14 +127,14 @@ void setup() {
 void dc_motors(int x){
   motor1.setSpeed(200);
   motor2.setSpeed(200);
-  if(x < 40){
+  if(x < 20){
     Serial.println("Moving Forward");
     motor1.forward();
     motor2.forward();
   }
 
   //NAT: EL RANGO DE VALORES (QUE ME SALIO) CUANDO EL JOYSTICK ESTABA SIN MOVERSE
-  if(x > 40 && x < 70){
+  if(x > 20 && x < 50){
     Serial.println("Motor stopped");
     motor1.stop();
     motor2.stop();
@@ -146,23 +148,39 @@ void dc_motors(int x){
 }
 
 //NAT: PARA MOVER EL SERVO (CON UN SERVO 360 CREO QUE SOLO PUEDE CAMBIAR DIRECCION)
+//Servo count must go past 1, if it goes past stop moving servo. Only move when it is 0
 void servo_movement(int x){
-  xAngle = map(x, 0, 255, 0, 360);
+  xAngle = map(x, 0, 255, 0, 180);
   Serial.print("xAngle:");
   Serial.println(xAngle);
-  if(20 < xAngle && xAngle < 50){
-    // myservo.write(0);  
+  if(10 < xAngle && xAngle < 40){
+    // myservo.write(0);
+    Serial.println("Stopping");
+    Serial.println(countR);
+    Serial.println(countL);
     myservo.writeMicroseconds(1500);
-    Serial.println("Stop");
-    step = 0;
-  }else if(xAngle < 20) {
-    Serial.println("One direction");
+    countR = 0;
+    countL = 0;
+  }else if(xAngle == 180 && countR == 0) {
+    Serial.println("Right");
+    Serial.println(countR);
+    Serial.println(countL);
     myservo.write(xAngle);
+    countR = 1;
+    countL = 0;
+    delay(500);
+    myservo.writeMicroseconds(1500);
     // myservo.writeMicroseconds(2000);
-  } else if(xAngle > 220) {
+  } else if(xAngle == 0 && countL == 0) {
+    Serial.println("Left");
+    Serial.println(countR);
+    Serial.println(countL);
     // myservo.writeMicroseconds(1000);
-    Serial.println("the other direction");
     myservo.write(xAngle);
+    countR = 0;
+    countL = 1;
+    delay(500);
+    myservo.writeMicroseconds(1500);
   }
 }
 
