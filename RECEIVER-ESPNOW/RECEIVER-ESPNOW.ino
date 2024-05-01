@@ -153,7 +153,7 @@ void servo_movement(int x){
   xAngle = map(x, 0, 255, 0, 180);
   Serial.print("xAngle:");
   Serial.println(xAngle);
-  if(10 < xAngle && xAngle < 40){
+  if((10 < xAngle && xAngle < 40) || countR >= 1 || countL >= 1){
     // myservo.write(0);
     Serial.println("Stopping");
     Serial.println(countR);
@@ -166,7 +166,8 @@ void servo_movement(int x){
     Serial.println(countR);
     Serial.println(countL);
     myservo.write(xAngle);
-    countR = 1;
+    // countR = 1;
+    countR += 1;
     countL = 0;
     delay(500);
     myservo.writeMicroseconds(1500);
@@ -178,7 +179,8 @@ void servo_movement(int x){
     // myservo.writeMicroseconds(1000);
     myservo.write(xAngle);
     countR = 0;
-    countL = 1;
+    countL += 1;
+    // countL = 1;
     delay(500);
     myservo.writeMicroseconds(1500);
   }
